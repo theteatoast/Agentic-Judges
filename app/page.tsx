@@ -306,7 +306,7 @@ export default function Home() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Agentic Judge
+          Evala
         </div>
         <div className="nav-links">
           <a href="#upload" className="nav-link">Upload</a>
@@ -330,7 +330,7 @@ export default function Home() {
         <div className="hero-content">
           <div className="badge">
             <span className="badge-icon">✦</span>
-            AI-Powered Video Analysis
+            Agentic Content Feedback
           </div>
           <h1 className="hero-title">
             Your Personal<br />
