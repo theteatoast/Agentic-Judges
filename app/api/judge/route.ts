@@ -3,26 +3,23 @@ import { writeFile, unlink } from "fs/promises";
 import { v4 as uuidv4 } from "uuid";
 import Groq from "groq-sdk";
 import { supabase } from "@/lib/supabase";
-import ffmpeg from "fluent-ffmpeg";
+import { join } from "path";
+import { tmpdir } from "os";
 
 // Allow large video uploads (50MB) - Configured in next.config.ts
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const { spawn } = require("child_process");
+const ffmpegPath = require("ffmpeg-static");
 
-// Extract audio from video using native ffmpeg spawn
+// Extract audio from video using native ffmpeg spawn with static binary
 function extractAudio(videoPath: string, audioPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
         console.log(`[judge] CWD: ${process.cwd()}`);
         console.log(`[judge] ffmpeg input: ${videoPath}`);
         console.log(`[judge] ffmpeg output: ${audioPath}`);
-
-        // First check if ffmpeg is verifying
-        const check = spawn("ffmpeg", ["-version"]);
-        check.on("error", (err: Error) => {
-            console.error("[judge] Error spawning ffmpeg (version check):", err);
-        });
+        console.log(`[judge] ffmpeg binary: ${ffmpegPath}`);
 
         const args = [
             "-i", videoPath,
@@ -35,9 +32,9 @@ function extractAudio(videoPath: string, audioPath: string): Promise<void> {
             audioPath
         ];
 
-        console.log(`[judge] Spawning: ffmpeg ${args.join(" ")}`);
+        console.log(`[judge] Spawning: ${ffmpegPath} ${args.join(" ")}`);
 
-        const ffmpegProcess = spawn("ffmpeg", args);
+        const ffmpegProcess = spawn(ffmpegPath, args);
 
         let stderr = "";
         ffmpegProcess.stderr.on("data", (data: Buffer) => {
@@ -170,11 +167,12 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 2. Save video to ROOT directory
+        // 2. Save video to temp directory
         const id = uuidv4();
         const ext = file.name.split(".").pop() || "mp4";
-        videoPath = `${id}.${ext}`;
-        audioPath = `${id}.wav`;
+        const tempDir = tmpdir();
+        const videoPath = join(tempDir, `${id}.${ext}`);
+        const audioPath = join(tempDir, `${id}.wav`);
 
         console.log(`[judge] Saving video to ${videoPath}`);
         const bytes = await file.arrayBuffer();

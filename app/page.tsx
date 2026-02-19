@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Orb from "./backgroundanimation";
 
 interface JudgmentResult {
   id: string;
@@ -9,12 +10,6 @@ interface JudgmentResult {
   feedback: string;
   score: number;
   created_at: string;
-}
-
-function scoreClass(score: number): string {
-  if (score >= 70) return "high";
-  if (score >= 40) return "mid";
-  return "low";
 }
 
 function formatDate(dateStr: string): string {
@@ -80,7 +75,7 @@ export default function Home() {
       setResult(null);
       setSelectedHistory(null);
     } else {
-      setError("Please drop a valid video file.");
+      setError("Please upload a valid vide file (MP4, MOV, WebM).");
     }
   }, []);
 
@@ -148,212 +143,212 @@ export default function Home() {
   const displayResult = selectedHistory || result;
 
   const processingSteps = [
-    { label: "Extracting audio from video...", icon: "🎵" },
-    { label: "Transcribing speech with AI...", icon: "📝" },
-    { label: "Analyzing content quality...", icon: "🧠" },
-    { label: "Generating feedback...", icon: "✨" },
+    "Extracting audio...",
+    "Transcribing speech...",
+    "Analyzing content...",
+    "Finalizing report...",
   ];
 
   return (
-    <div className="container">
-      {/* Header */}
-      <header className="header">
-        <div className="header-badge">
-          <span className="header-badge-dot" />
-          AI-Powered
+    <>
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
+        <Orb
+          hoverIntensity={2}
+          rotateOnHover
+          hue={0}
+          forceHoverState={false}
+          backgroundColor="#000000"
+        />
+      </div>
+      <nav className="navbar animate-float">
+        <div className="nav-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Agentic Judge
         </div>
-        <h1>Agentic Judge</h1>
-        <p>
-          Upload your video and get instant AI feedback on clarity, engagement,
-          and overall content quality.
-        </p>
-      </header>
-
-      {/* Error */}
-      {error && (
-        <div className="error-card fade-in-up">
-          <span className="error-icon">⚠️</span>
-          <span className="error-text">{error}</span>
+        <div className="nav-links">
+          <a href="#" className="nav-link">How it Works</a>
+          <a href="#" className="nav-link">Pricing</a>
+          <a href="#" className="nav-link">Docs</a>
         </div>
-      )}
+        <button className="nav-cta">Sign In</button>
+      </nav>
 
-      {/* Processing */}
-      {loading && (
-        <div className="processing-card fade-in-up">
-          <div className="processing-spinner" />
-          <h3>Analyzing Your Video</h3>
-          <p>This may take a moment...</p>
-          <div className="processing-steps">
-            {processingSteps.map((step, i) => (
-              <div
-                key={i}
-                className={`processing-step ${i < processingStep
-                    ? "done"
-                    : i === processingStep
-                      ? "active"
-                      : ""
-                  }`}
-              >
-                <span className="processing-step-icon">
-                  {i < processingStep ? "✓" : step.icon}
-                </span>
-                {step.label}
-              </div>
-            ))}
+      <div className="container">
+        {/* Hero Section */}
+        <section className="hero">
+          <div className="badge">
+            <span style={{ color: 'var(--accent-primary)' }}>✨</span>
+            AI Analysis v1.0 Now Live • Try it Free →
           </div>
-        </div>
-      )}
+          <h1>
+            Master Your Video Content<br />
+            with Instant AI Feedback
+          </h1>
+          <p>
+            Stop guessing if your content lands. Get actionable scores on clarity,
+            engagement, and delivery in seconds powered by advanced LLMs.
+          </p>
 
-      {/* Results */}
-      {displayResult && !loading && (
-        <div className="results-section fade-in-up">
-          <div className="results-header">
-            <h2>
-              {selectedHistory ? "📋 Past Judgment" : "✨ Judgment Results"}
-            </h2>
-            <button className="new-btn" onClick={handleReset}>
-              + New Upload
+          <div className="hero-actions">
+            <button className="btn btn-outline" onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })}>
+              View Recent Analysis
+            </button>
+            <button className="btn btn-primary" onClick={() => fileInputRef.current?.click()}>
+              Judge My Video →
             </button>
           </div>
+        </section>
 
-          {/* Score */}
-          <div className="score-card fade-in-up delay-1">
-            <div className={`score-value ${scoreClass(displayResult.score)}`}>
-              {displayResult.score}
-            </div>
-            <div className="score-label">Overall Score</div>
-            <div className="score-bar-container">
-              <div
-                className={`score-bar ${scoreClass(displayResult.score)}`}
-                style={{ width: `${displayResult.score}%` }}
+        {/* Upload Container (Glassmorphism) */}
+        <div className="upload-container">
+          {!displayResult && !loading ? (
+            <div
+              className={`upload-zone-custom ${dragging ? "dragging" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {!file ? (
+                <>
+                  <div style={{ marginBottom: '16px', color: 'var(--accent-primary)' }}>
+                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                  </div>
+                  <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: 'white' }}>
+                    Upload Video for Analysis
+                  </h3>
+                  <p style={{ color: '#94a3b8', fontSize: '14px' }}>
+                    Drag & drop or click to browse (MP4, MOV, MKV)
+                  </p>
+                </>
+              ) : (
+                <div className="file-ready">
+                  <h3 style={{ color: 'var(--accent-primary)', fontSize: '24px', marginBottom: '8px' }}>{file.name}</h3>
+                  <p style={{ color: 'white', opacity: 0.8 }}>{formatFileSize(file.size)} • Ready to process</p>
+
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={(e) => { e.stopPropagation(); handleSubmit(); }}
+                      disabled={loading}
+                    >
+                      Start Analysis
+                    </button>
+                    <button
+                      className="btn btn-outline"
+                      onClick={(e) => { e.stopPropagation(); handleReset(); }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*"
+                style={{ display: 'none' }}
+                onChange={handleFileSelect}
               />
             </div>
-          </div>
+          ) : null}
 
-          {/* Feedback */}
-          <div className="detail-card fade-in-up delay-2">
-            <div className="detail-card-header">
-              <span className="detail-card-icon">💬</span>
-              <span className="detail-card-title">AI Feedback</span>
-            </div>
-            <div className="detail-card-content">{displayResult.feedback}</div>
-          </div>
-
-          {/* Transcript */}
-          <div className="detail-card fade-in-up delay-3">
-            <div className="detail-card-header">
-              <span className="detail-card-icon">📝</span>
-              <span className="detail-card-title">Transcript</span>
-            </div>
-            <div className="detail-card-content">{displayResult.transcript}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Upload Zone */}
-      {!loading && !displayResult && (
-        <>
-          <div
-            className={`upload-zone ${dragging ? "dragging" : ""}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <div className="upload-zone-content">
-              <span className="upload-icon">🎬</span>
-              <h3>Drop your video here</h3>
-              <p>or click to browse files</p>
-              <p className="file-types">
-                MP4, WebM, MOV, AVI, MKV • Max 60 seconds • Max 50MB
-              </p>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="video/*"
-              className="upload-input"
-              onChange={handleFileSelect}
-            />
-          </div>
-
-          {/* Selected File */}
-          {file && (
-            <div className="selected-file fade-in-up">
-              <span className="selected-file-icon">🎥</span>
-              <div className="selected-file-info">
-                <div className="selected-file-name">{file.name}</div>
-                <div className="selected-file-size">
-                  {formatFileSize(file.size)}
-                </div>
-              </div>
-              <button className="selected-file-remove" onClick={handleReset}>
-                ✕
-              </button>
+          {/* Loading State */}
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <div style={{
+                width: '60px', height: '60px',
+                border: '4px solid rgba(255,255,255,0.1)',
+                borderTopColor: 'var(--accent-primary)',
+                borderRadius: '50%',
+                margin: '0 auto 24px',
+                animation: 'spin 1s linear infinite'
+              }} />
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px' }}>Processing Video</h3>
+              <p style={{ color: '#94a3b8' }}>{processingSteps[processingStep] || "Finalizing..."}</p>
             </div>
           )}
 
-          {/* Submit */}
-          <button
-            className="submit-btn"
-            onClick={handleSubmit}
-            disabled={!file || loading}
-          >
-            {loading ? "Processing..." : "🚀 Judge My Content"}
-          </button>
-        </>
-      )}
-
-      {/* History */}
-      <div className="history-section">
-        <h2>
-          <span>📚</span> Past Judgments
-        </h2>
-        {history.length === 0 ? (
-          <div className="empty-state">
-            No judgments yet. Upload your first video to get started!
-          </div>
-        ) : (
-          <div className="history-list">
-            {history.map((item) => (
-              <div
-                key={item.id}
-                className="history-item"
-                onClick={() => {
-                  setSelectedHistory(item);
-                  setResult(null);
-                  setFile(null);
-                  setError(null);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              >
-                <div
-                  className={`history-item-score ${scoreClass(item.score)}`}
-                  style={{
-                    color:
-                      item.score >= 70
-                        ? "var(--success)"
-                        : item.score >= 40
-                          ? "var(--warning)"
-                          : "var(--danger)",
-                  }}
+          {/* Results Grid */}
+          {displayResult && !loading && (
+            <div className="results-grid">
+              {/* Score Card */}
+              <div className="glass-card" style={{ gridColumn: 'span 4', textAlign: 'center' }}>
+                <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8', marginBottom: '16px' }}>Overall Score</div>
+                <div style={{ fontSize: '80px', fontWeight: '800', lineHeight: '1', color: 'white', marginBottom: '16px' }}>
+                  {displayResult.score}
+                </div>
+                <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${displayResult.score}%`, background: 'var(--accent-primary)' }} />
+                </div>
+                <button
+                  onClick={handleReset}
+                  className="btn btn-outline"
+                  style={{ marginTop: '24px', fontSize: '14px', padding: '8px 16px', width: '100%' }}
                 >
-                  {item.score}
-                </div>
-                <div className="history-item-info">
-                  <div className="history-item-name">
-                    {item.video_filename}
-                  </div>
-                  <div className="history-item-date">
-                    {formatDate(item.created_at)}
-                  </div>
-                </div>
-                <span className="history-item-arrow">→</span>
+                  New Analysis
+                </button>
               </div>
-            ))}
-          </div>
-        )}
+
+              {/* Details Card */}
+              <div className="glass-card" style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div>
+                  <h3 style={{ fontSize: '16px', color: 'var(--accent-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    AI Feedback
+                  </h3>
+                  <div style={{ fontSize: '15px', lineHeight: '1.7', color: '#cbd5e1' }}>
+                    {displayResult.feedback}
+                  </div>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', color: 'var(--accent-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                    Transcript
+                  </h3>
+                  <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#94a3b8', maxHeight: '150px', overflowY: 'auto', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                    {displayResult.transcript}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* History Section */}
+        <div style={{ marginTop: '80px', marginBottom: '80px' }}>
+          <h2 style={{ fontSize: '24px', textAlign: 'center', marginBottom: '32px' }}>Recent Analyses</h2>
+          {history.length > 0 ? (
+            <div className="results-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+              {history.map((item) => (
+                <div
+                  key={item.id}
+                  className="glass-card"
+                  style={{ cursor: 'pointer', transition: 'all 0.2s', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  onClick={() => {
+                    setSelectedHistory(item);
+                    setResult(null);
+                    setFile(null);
+                    window.scrollTo({ top: 500, behavior: 'smooth' });
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.video_filename}</div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>{formatDate(item.created_at)}</div>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--accent-primary)' }}>{item.score}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ textAlign: 'center', color: '#94a3b8' }}>No history yet.</p>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
