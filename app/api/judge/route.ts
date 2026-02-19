@@ -80,27 +80,31 @@ async function transcribeAudio(audioPath: string): Promise<string> {
     return transcription as unknown as string;
 }
 
-// Judge content using Groq LLM
 async function judgeContent(
     transcript: string
 ): Promise<{ feedback: string; score: number }> {
-    // ... (same as before) ...
-    const systemPrompt = `You are an expert content judge and coach. Your role is to evaluate spoken content from videos and provide actionable feedback.
+    const systemPrompt = `You are an expert content judge and coach. Evaluate spoken content from videos and provide actionable feedback.
 
-Evaluate the content on these criteria:
-1. **Clarity** (Is the message clear and easy to follow?)
-2. **Engagement** (Is it interesting and attention-grabbing?)
-3. **Structure** (Is it well-organized with a clear beginning, middle, and end?)
-4. **Delivery** (Based on the transcript, does the speaker seem confident and natural?)
-5. **Value** (Does the content provide value to the audience?)
+Evaluate on these criteria:
+1. Clarity - Is the message clear and easy to follow?
+2. Engagement - Is it interesting and attention-grabbing?
+3. Structure - Is it well-organized with a clear beginning, middle, and end?
+4. Delivery - Does the speaker seem confident and natural?
+5. Value - Does the content provide value to the audience?
 
 You MUST respond in this exact JSON format:
 {
   "score": <number from 1-100>,
-  "feedback": "<Your detailed feedback as a single string with sections separated by newlines>"
+  "summary": "<1-2 sentence overall summary>",
+  "clarity": { "score": <1-10>, "comment": "<1-2 sentences>" },
+  "engagement": { "score": <1-10>, "comment": "<1-2 sentences>" },
+  "structure": { "score": <1-10>, "comment": "<1-2 sentences>" },
+  "delivery": { "score": <1-10>, "comment": "<1-2 sentences>" },
+  "value": { "score": <1-10>, "comment": "<1-2 sentences>" },
+  "tips": ["<actionable tip 1>", "<actionable tip 2>", "<actionable tip 3>"]
 }
 
-Be constructive, specific, and encouraging. Give practical tips for improvement.`;
+Be constructive, specific, and encouraging.`;
 
     const response = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
@@ -118,8 +122,9 @@ Be constructive, specific, and encouraging. Give practical tips for improvement.
     const content = response.choices[0]?.message?.content || "{}";
     try {
         const parsed = JSON.parse(content);
+        // Store the full structured JSON as the feedback string
         return {
-            feedback: parsed.feedback || "No feedback generated.",
+            feedback: JSON.stringify(parsed),
             score: Math.min(100, Math.max(1, parseInt(parsed.score) || 50)),
         };
     } catch {

@@ -27,6 +27,152 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+interface StructuredFeedback {
+  summary?: string;
+  clarity?: { score: number; comment: string };
+  engagement?: { score: number; comment: string };
+  structure?: { score: number; comment: string };
+  delivery?: { score: number; comment: string };
+  value?: { score: number; comment: string };
+  tips?: string[];
+}
+
+const CATEGORY_ICONS: Record<string, { icon: string; color: string }> = {
+  clarity: { icon: '💡', color: '#a78bfa' },
+  engagement: { icon: '🎯', color: '#f472b6' },
+  structure: { icon: '🏗️', color: '#38bdf8' },
+  delivery: { icon: '🎙️', color: '#34d399' },
+  value: { icon: '💎', color: '#fbbf24' },
+};
+
+function parseFeedback(raw: string): StructuredFeedback | null {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.summary || parsed.clarity || parsed.tips) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function FeedbackDisplay({ result, onReset }: { result: JudgmentResult; onReset: () => void }) {
+  const structured = parseFeedback(result.feedback);
+
+  const categories = structured
+    ? (['clarity', 'engagement', 'structure', 'delivery', 'value'] as const).filter(k => structured[k])
+    : [];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Top row: Score + Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '16px' }}>
+        {/* Score card */}
+        <div className="glass-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--text-secondary)', marginBottom: '12px' }}>Overall Score</div>
+          <div style={{
+            fontSize: '64px', fontWeight: '800', lineHeight: '1', marginBottom: '12px',
+            background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          }}>
+            {result.score}
+          </div>
+          <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', marginBottom: '16px' }}>
+            <div style={{
+              height: '100%', width: `${result.score}%`,
+              background: 'linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))',
+              borderRadius: '2px', transition: 'width 1s ease'
+            }} />
+          </div>
+          <button onClick={onReset} className="btn btn-outline" style={{ fontSize: '13px', padding: '8px 14px', width: '100%' }}>
+            New Analysis
+          </button>
+        </div>
+
+        {/* Summary + Tips */}
+        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {structured?.summary && (
+            <div>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                ✦ Summary
+              </h3>
+              <p style={{ fontSize: '14px', lineHeight: '1.7', color: '#cbd5e1' }}>{structured.summary}</p>
+            </div>
+          )}
+          {structured?.tips && structured.tips.length > 0 && (
+            <div>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🚀 Tips to Improve
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {structured.tips.map((tip, i) => (
+                  <div key={i} style={{
+                    display: 'flex', gap: '10px', alignItems: 'flex-start',
+                    padding: '10px 14px', borderRadius: '10px',
+                    background: 'rgba(167, 139, 250, 0.04)',
+                    border: '1px solid rgba(167, 139, 250, 0.1)',
+                    fontSize: '13px', lineHeight: '1.5', color: '#cbd5e1'
+                  }}>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: '600', flexShrink: 0 }}>{i + 1}.</span>
+                    {tip}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Fallback for old plain-text feedback */}
+          {!structured && (
+            <div style={{ fontSize: '14px', lineHeight: '1.7', color: '#cbd5e1' }}>
+              {result.feedback}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Category breakdown */}
+      {categories.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          {categories.map(key => {
+            const cat = structured![key]!;
+            const meta = CATEGORY_ICONS[key];
+            return (
+              <div key={key} className="glass-card" style={{ padding: '18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'capitalize' }}>
+                    {meta.icon} {key}
+                  </span>
+                  <span style={{ fontSize: '16px', fontWeight: '800', color: meta.color }}>{cat.score}/10</span>
+                </div>
+                <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
+                  <div style={{
+                    height: '100%', width: `${cat.score * 10}%`,
+                    background: meta.color, borderRadius: '2px',
+                    transition: 'width 0.8s ease'
+                  }} />
+                </div>
+                <p style={{ fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)' }}>{cat.comment}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Transcript */}
+      <div className="glass-card">
+        <h3 style={{ fontSize: '14px', color: 'var(--accent-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
+          🎙️ Transcript
+        </h3>
+        <div style={{
+          fontSize: '13px', lineHeight: '1.6', color: 'var(--text-secondary)',
+          maxHeight: '160px', overflowY: 'auto',
+          padding: '12px', background: 'rgba(0,0,0,0.25)', borderRadius: '10px'
+        }}>
+          {result.transcript}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -330,61 +476,7 @@ export default function Home() {
 
             {/* Results */}
             {displayResult && !loading && (
-              <div className="results-grid">
-                {/* Score */}
-                <div className="glass-card" style={{ gridColumn: 'span 4', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--text-secondary)', marginBottom: '14px' }}>Score</div>
-                  <div style={{
-                    fontSize: '72px', fontWeight: '800', lineHeight: '1', marginBottom: '14px',
-                    background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                  }}>
-                    {displayResult.score}
-                  </div>
-                  <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', marginBottom: '20px' }}>
-                    <div style={{
-                      height: '100%',
-                      width: `${displayResult.score}%`,
-                      background: `linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))`,
-                      borderRadius: '2px',
-                      transition: 'width 1s ease'
-                    }} />
-                  </div>
-                  <button
-                    onClick={handleReset}
-                    className="btn btn-outline"
-                    style={{ fontSize: '13px', padding: '8px 16px', width: '100%' }}
-                  >
-                    New Analysis
-                  </button>
-                </div>
-
-                {/* Details */}
-                <div className="glass-card" style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '14px', color: 'var(--accent-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
-                      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-                      AI Feedback
-                    </h3>
-                    <div style={{ fontSize: '14px', lineHeight: '1.7', color: '#cbd5e1' }}>
-                      {displayResult.feedback}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '14px', color: 'var(--accent-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
-                      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                      Transcript
-                    </h3>
-                    <div style={{
-                      fontSize: '13px', lineHeight: '1.6', color: 'var(--text-secondary)',
-                      maxHeight: '140px', overflowY: 'auto',
-                      padding: '12px', background: 'rgba(0,0,0,0.25)', borderRadius: '10px'
-                    }}>
-                      {displayResult.transcript}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <FeedbackDisplay result={displayResult} onReset={handleReset} />
             )}
           </div>
         </div>
