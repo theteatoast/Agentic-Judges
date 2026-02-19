@@ -295,7 +295,7 @@ export default function Orb({
         };
     }, [hue, hoverIntensity, rotateOnHover, forceHoverState, backgroundColor]);
 
-    return <div ref={ctnDom} className="w-full h-full" />;
+    return <div ref={ctnDom} style={{ width: '100%', height: '100%' }} />;
 }
 
 function hslToRgb(h: number, s: number, l: number) {
