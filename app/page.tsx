@@ -187,12 +187,11 @@ export default function Home() {
             AI-Powered Video Analysis
           </div>
           <h1 className="hero-title">
-            Judge Your Videos<br />
-            with AI Precision
+            Your Personal<br />
+            AI Judges
           </h1>
           <p className="hero-subtitle">
-            Upload any video and get instant AI feedback on clarity,
-            engagement, and delivery. Powered by advanced LLMs.
+            Upload a video and get actionable feedback on what works, what doesn’t, and how to improve.
           </p>
           <div className="hero-actions">
             <button className="btn btn-primary" onClick={scrollToUpload}>
@@ -210,6 +209,19 @@ export default function Home() {
 
         {/* Upload Section */}
         <div id="upload" ref={uploadRef} style={{ paddingTop: '40px' }}>
+          <h2 style={{
+            fontSize: '28px', fontWeight: '700', textAlign: 'center', marginBottom: '8px',
+            letterSpacing: '-0.5px'
+          }}>
+            Upload & Analyze
+          </h2>
+          <p style={{
+            textAlign: 'center', color: 'var(--text-secondary)', fontSize: '15px',
+            marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px'
+          }}>
+            Drop your video and let the AI do the rest
+          </p>
+
           <div className="upload-container">
             {!displayResult && !loading ? (
               <div
@@ -221,22 +233,53 @@ export default function Home() {
               >
                 {!file ? (
                   <>
-                    <div style={{ marginBottom: '14px', color: 'var(--accent-primary)' }}>
-                      <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    {/* Upload icon with glow ring */}
+                    <div style={{
+                      width: '72px', height: '72px', borderRadius: '50%',
+                      background: 'rgba(167, 139, 250, 0.08)',
+                      border: '1px solid rgba(167, 139, 250, 0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      margin: '0 auto 20px',
+                    }}>
+                      <svg width="28" height="28" fill="none" stroke="var(--accent-primary)" viewBox="0 0 24 24" strokeWidth="1.8">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4" />
+                        <path strokeLinecap="round" d="M20 16.7V19a2 2 0 01-2 2H6a2 2 0 01-2-2v-2.3" />
                       </svg>
                     </div>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '6px', color: 'white' }}>
+                    <h3 style={{ fontSize: '17px', fontWeight: '600', marginBottom: '6px', color: 'white' }}>
                       Upload Video for Analysis
                     </h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-                      Drag & drop or click to browse · MP4, MOV, MKV
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '18px' }}>
+                      Drag & drop or click to browse
                     </p>
+                    {/* Format pills */}
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                      {['MP4', 'MOV', 'MKV', 'WebM'].map(fmt => (
+                        <span key={fmt} style={{
+                          fontSize: '11px', fontWeight: '500', padding: '4px 12px',
+                          borderRadius: '100px', background: 'rgba(255,255,255,0.04)',
+                          border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-secondary)',
+                          letterSpacing: '0.5px'
+                        }}>{fmt}</span>
+                      ))}
+                    </div>
                   </>
                 ) : (
                   <div>
-                    <h3 style={{ color: 'var(--accent-primary)', fontSize: '20px', fontWeight: '600', marginBottom: '6px' }}>{file.name}</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{formatFileSize(file.size)} · Ready to analyze</p>
+                    {/* File ready icon */}
+                    <div style={{
+                      width: '64px', height: '64px', borderRadius: '50%',
+                      background: 'rgba(56, 189, 248, 0.1)',
+                      border: '1px solid rgba(56, 189, 248, 0.25)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      margin: '0 auto 16px',
+                    }}>
+                      <svg width="24" height="24" fill="none" stroke="var(--accent-secondary)" viewBox="0 0 24 24" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '600', marginBottom: '4px' }}>{file.name}</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{formatFileSize(file.size)}</p>
 
                     <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
                       <button
@@ -244,7 +287,7 @@ export default function Home() {
                         onClick={(e) => { e.stopPropagation(); handleSubmit(); }}
                         disabled={loading}
                       >
-                        Start Analysis
+                        Analyze Now
                       </button>
                       <button
                         className="btn btn-outline"
@@ -267,16 +310,20 @@ export default function Home() {
 
             {/* Loading State */}
             {loading && (
-              <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+              <div style={{ textAlign: 'center', padding: '56px 24px' }}>
                 <div className="spinner" />
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Processing Video</h3>
+                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Analyzing Your Video</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{processingSteps[processingStep] || "Finalizing..."}</p>
               </div>
             )}
 
             {/* Error */}
             {error && (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#f87171', fontSize: '14px' }}>
+              <div style={{
+                textAlign: 'center', padding: '16px 20px', color: '#f87171', fontSize: '14px',
+                background: 'rgba(248, 113, 113, 0.06)', borderRadius: '10px',
+                border: '1px solid rgba(248, 113, 113, 0.15)', marginTop: '16px'
+              }}>
                 {error}
               </div>
             )}
@@ -287,7 +334,11 @@ export default function Home() {
                 {/* Score */}
                 <div className="glass-card" style={{ gridColumn: 'span 4', textAlign: 'center' }}>
                   <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--text-secondary)', marginBottom: '14px' }}>Score</div>
-                  <div style={{ fontSize: '72px', fontWeight: '800', lineHeight: '1', color: 'white', marginBottom: '14px' }}>
+                  <div style={{
+                    fontSize: '72px', fontWeight: '800', lineHeight: '1', marginBottom: '14px',
+                    background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                  }}>
                     {displayResult.score}
                   </div>
                   <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', marginBottom: '20px' }}>
@@ -339,10 +390,22 @@ export default function Home() {
         </div>
 
         {/* History Section */}
-        <div id="history" style={{ paddingTop: '20px', paddingBottom: '100px' }}>
-          <h2 className="section-title">Recent Analyses</h2>
+        <div id="history" style={{ paddingTop: '60px', paddingBottom: '100px' }}>
+          <h2 style={{
+            fontSize: '28px', fontWeight: '700', textAlign: 'center', marginBottom: '8px',
+            letterSpacing: '-0.5px'
+          }}>
+            Recent Analyses
+          </h2>
+          <p style={{
+            textAlign: 'center', color: 'var(--text-secondary)', fontSize: '15px',
+            marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px'
+          }}>
+            Click any past analysis to view details
+          </p>
+
           {history.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
               {history.map((item) => (
                 <div
                   key={item.id}
@@ -354,18 +417,32 @@ export default function Home() {
                     uploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }}
                 >
-                  <div style={{ overflow: 'hidden', flex: 1 }}>
-                    <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {item.video_filename}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', overflow: 'hidden', flex: 1 }}>
+                    {/* Video file icon */}
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+                      background: 'rgba(167, 139, 250, 0.08)',
+                      border: '1px solid rgba(167, 139, 250, 0.15)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <svg width="18" height="18" fill="none" stroke="var(--accent-primary)" viewBox="0 0 24 24" strokeWidth="1.8">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{formatDate(item.created_at)}</div>
+                    <div style={{ overflow: 'hidden' }}>
+                      <div style={{
+                        fontWeight: '600', fontSize: '14px', marginBottom: '2px',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                      }}>
+                        {item.video_filename}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{formatDate(item.created_at)}</div>
+                    </div>
                   </div>
                   <div style={{
-                    fontSize: '20px', fontWeight: '700',
+                    fontSize: '22px', fontWeight: '800', marginLeft: '16px',
                     background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    marginLeft: '16px'
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                   }}>
                     {item.score}
                   </div>
@@ -373,12 +450,31 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-              No analyses yet. Upload a video to get started.
-            </p>
+            <div style={{
+              textAlign: 'center', padding: '48px 24px',
+              background: 'rgba(14, 8, 30, 0.4)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '16px',
+            }}>
+              <div style={{
+                width: '56px', height: '56px', borderRadius: '50%',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 16px'
+              }}>
+                <svg width="22" height="22" fill="none" stroke="var(--text-secondary)" viewBox="0 0 24 24" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                No analyses yet. Upload a video to get started.
+              </p>
+            </div>
           )}
         </div>
       </div>
+
     </>
   );
 }
