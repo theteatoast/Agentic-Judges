@@ -1,52 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, unlink, mkdir } from "fs/promises";
-import { join } from "path";
-import { tmpdir } from "os";
+import { writeFile, unlink } from "fs/promises";
 import { v4 as uuidv4 } from "uuid";
 import Groq from "groq-sdk";
 import { supabase } from "@/lib/supabase";
 import ffmpeg from "fluent-ffmpeg";
 
-// Allow large video uploads (50MB)
-export const config = {
-    api: {
-        bodyParser: false,
-        responseLimit: false,
-    },
-};
+// Allow large video uploads (50MB) - Configured in next.config.ts
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Ensure tmp directory exists
-const TMP_DIR = join(tmpdir(), "agentic-judges");
+const { spawn } = require("child_process");
 
-async function ensureTmpDir() {
-    try {
-        await mkdir(TMP_DIR, { recursive: true });
-    } catch {
-        // directory already exists
-    }
-}
-
-// Extract audio from video using ffmpeg
+// Extract audio from video using native ffmpeg spawn
 function extractAudio(videoPath: string, audioPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
-        ffmpeg(videoPath)
-            .noVideo()
-            .audioCodec("pcm_s16le")
-            .audioFrequency(16000)
-            .audioChannels(1)
-            .format("wav")
-            .output(audioPath)
-            .on("end", () => resolve())
-            .on("error", (err: Error) => reject(err))
-            .run();
+        console.log(`[judge] CWD: ${process.cwd()}`);
+        console.log(`[judge] ffmpeg input: ${videoPath}`);
+        console.log(`[judge] ffmpeg output: ${audioPath}`);
+
+        // First check if ffmpeg is verifying
+        const check = spawn("ffmpeg", ["-version"]);
+        check.on("error", (err: Error) => {
+            console.error("[judge] Error spawning ffmpeg (version check):", err);
+        });
+
+        const args = [
+            "-i", videoPath,
+            "-vn",
+            "-acodec", "pcm_s16le",
+            "-ar", "16000",
+            "-ac", "1",
+            "-f", "wav",
+            "-y", // force overwrite
+            audioPath
+        ];
+
+        console.log(`[judge] Spawning: ffmpeg ${args.join(" ")}`);
+
+        const ffmpegProcess = spawn("ffmpeg", args);
+
+        let stderr = "";
+        ffmpegProcess.stderr.on("data", (data: Buffer) => {
+            stderr += data.toString();
+        });
+
+        ffmpegProcess.on("close", (code: number) => {
+            if (code === 0) {
+                console.log("[judge] ffmpeg success");
+                resolve();
+            } else {
+                console.error(`[judge] ffmpeg failed with code ${code}`);
+                // Check if error is due to missing audio stream
+                if (stderr.includes("Output file does not contain any stream")) {
+                    reject(new Error("No audio track found in the video. Please upload a video with sound."));
+                } else {
+                    console.error(`[judge] ffmpeg stderr:\n${stderr}`);
+                    reject(new Error(`ffmpeg exited with code ${code}: ${stderr}`));
+                }
+            }
+        });
+
+        ffmpegProcess.on("error", (err: Error) => {
+            console.error("[judge] Failed to start ffmpeg process:", err);
+            reject(err);
+        });
     });
 }
 
 // Transcribe audio using Groq Whisper
 async function transcribeAudio(audioPath: string): Promise<string> {
     const fs = await import("fs");
+    // fs.createReadStream works with relative paths in CWD
     const file = fs.createReadStream(audioPath);
 
     const transcription = await groq.audio.transcriptions.create({
@@ -63,6 +87,7 @@ async function transcribeAudio(audioPath: string): Promise<string> {
 async function judgeContent(
     transcript: string
 ): Promise<{ feedback: string; score: number }> {
+    // ... (same as before) ...
     const systemPrompt = `You are an expert content judge and coach. Your role is to evaluate spoken content from videos and provide actionable feedback.
 
 Evaluate the content on these criteria:
@@ -110,15 +135,17 @@ export async function POST(request: NextRequest) {
     let audioPath = "";
 
     try {
-        await ensureTmpDir();
-
+        // ... (file parsing logic remains) ...
         // 1. Parse the uploaded file
+        console.log("[judge] Parsing form data...");
         const formData = await request.formData();
         const file = formData.get("video") as File | null;
 
         if (!file) {
             return NextResponse.json({ error: "No video file provided" }, { status: 400 });
         }
+
+        console.log(`[judge] File received: ${file.name} (${file.size} bytes, type: ${file.type})`);
 
         // Validate file size (50MB max)
         if (file.size > 50 * 1024 * 1024) {
@@ -128,7 +155,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate file type
+        // ... (validation checks) ...
         const validTypes = [
             "video/mp4",
             "video/webm",
@@ -143,68 +170,62 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 2. Save video to temp directory
+        // 2. Save video to ROOT directory
         const id = uuidv4();
         const ext = file.name.split(".").pop() || "mp4";
-        videoPath = join(TMP_DIR, `${id}.${ext}`);
-        audioPath = join(TMP_DIR, `${id}.wav`);
+        videoPath = `${id}.${ext}`;
+        audioPath = `${id}.wav`;
 
+        console.log(`[judge] Saving video to ${videoPath}`);
         const bytes = await file.arrayBuffer();
         await writeFile(videoPath, Buffer.from(bytes));
+        console.log("[judge] Video saved successfully.");
 
         // 3. Extract audio with ffmpeg
+        console.log("[judge] Extracting audio with ffmpeg...");
         await extractAudio(videoPath, audioPath);
+        console.log("[judge] Audio extracted successfully.");
 
-        // 4. Transcribe with Groq Whisper
+        // 4. Transcribe...
+        console.log("[judge] Transcribing with Groq Whisper...");
         const transcript = await transcribeAudio(audioPath);
+        console.log(`[judge] Transcript received: "${String(transcript).substring(0, 100)}..."`);
 
-        if (!transcript || transcript.trim().length === 0) {
-            return NextResponse.json(
-                { error: "Could not transcribe audio. The video may have no speech." },
-                { status: 422 }
-            );
+        if (!transcript || String(transcript).trim().length === 0) {
+            throw new Error("No speech detected in video.");
         }
 
-        // 5. Judge with Groq LLM
-        const { feedback, score } = await judgeContent(transcript.trim());
+        // 5. Judge...
+        console.log("[judge] Sending to Groq LLM...");
+        const { feedback, score } = await judgeContent(String(transcript).trim());
 
-        // 6. Save to Supabase
+        // 6. Save...
         const { error: dbError } = await supabase.from("judgments").insert({
-            id,
-            video_filename: file.name,
-            transcript: transcript.trim(),
-            feedback,
-            score,
+            id, video_filename: file.name, transcript: String(transcript).trim(), feedback, score
+        });
+        if (dbError) console.error("[judge] Supabase error:", dbError);
+
+        return NextResponse.json({
+            id, video_filename: file.name, transcript: String(transcript).trim(), feedback, score, created_at: new Date().toISOString()
         });
 
-        if (dbError) {
-            console.error("Supabase error:", dbError);
-            // Don't fail the request if DB save fails — still return the result
+    } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        console.error("[judge] ❌ API error:", errMsg);
+
+        if (errMsg.includes("No audio track found") || errMsg.includes("No speech detected")) {
+            return NextResponse.json({ error: errMsg }, { status: 422 });
         }
 
-        // 7. Return response
-        return NextResponse.json({
-            id,
-            video_filename: file.name,
-            transcript: transcript.trim(),
-            feedback,
-            score,
-            created_at: new Date().toISOString(),
-        });
-    } catch (error) {
-        console.error("Judge API error:", error);
         return NextResponse.json(
-            { error: "Failed to process video. Please try again." },
+            { error: `Failed to process video: ${errMsg}` },
             { status: 500 }
         );
     } finally {
-        // Cleanup temp files
         try {
             if (videoPath) await unlink(videoPath);
             if (audioPath) await unlink(audioPath);
-        } catch {
-            // ignore cleanup errors
-        }
+        } catch { }
     }
 }
 
